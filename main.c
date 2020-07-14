@@ -64,9 +64,10 @@ volatile uint8_t finish = 0;
 
 
 // sweep voltages scaling matrix
-float voltage[] = {0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1};
+float voltage[] = {-1,-0.95,-0.9,-0.85,-0.8,-0.75,-0.7,-0.65,-0.6,-0.55,-0.5,-0.45,-0.4,-0.35,-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1};
 
-
+// Power supplies sweep matrix
+float PS_OUT[] = {2.5, 5, 7.5, 10};
 
 
 /*
@@ -84,6 +85,10 @@ void main(void)
     uint16_t value;
     float current_lim;
 
+    // +/- Power supply outs
+
+
+    current_lim = 20;  // 20mA current limit on power supplies
 
 
 
@@ -274,6 +279,16 @@ void main(void)
             P2->OUT  &= ~(BIT1);
             send_characters(CLEAR);  // clear UART
 
+            cursor_pos(1, 2);   // set cursor to 2nd line
+            send_characters(',,, ');
+            send_characters('Powe');
+            send_characters('r Su');
+            send_characters('ppli');
+            send_characters('es =');
+            send_characters(' ');
+            send_number(PS_OUT[main_loop]*10000000);
+            move_left(4);
+            send_characters('V,  ');
 
 
             TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE;           // enables interrupts for timer
@@ -281,16 +296,10 @@ void main(void)
             send_characters('Vi, ');
             move_right(5);
             move_right(5);
-            send_characters('V1, ');
+            send_characters('Vo, ');
             move_right(5);
             move_right(5);
-            send_characters('V2, ');
-            move_right(5);
-            move_right(5);
-            send_characters('V3, ');
-            move_right(5);
-            move_right(5);
-            send_characters('V4');
+            send_characters('V-');
 
 
            while(!finish)
@@ -309,7 +318,7 @@ void main(void)
                    }
                    send_characters('-');
 
-                   send = voltage[test]*5*-10000000;
+                   send = voltage[test]*PS_OUT[main_loop]*-10000000;
                    send_number(send);
                    send_characters(',');
 
@@ -324,142 +333,30 @@ void main(void)
 
                    send_characters(' ');
 
-                   send = voltage[test]*5*10000000;
+                   send = voltage[test]*PS_OUT[main_loop]*10000000;
                    send_number(send);
                    send_characters(',');
 
                }
 
 
-               for(j = 0; j<2; j++)
-               {
-                   prep_ADS1220(0x02);
-                   for(loop = 0; loop < 10000; loop++);
-                   for(loop = 0; loop < 10000; loop++);
-                   meas = start_ADS1220(0x02);
-
-                   meas = meas * 1.0044770 + 0.0357153; // 0x02 scaling
-                   //meas = meas * 1.0017629 + 0.0382527;    // 0x00 scaling
-
-                   if(meas < 0)
-                   {
-                       cursor_pos(4, 2);   // set cursor to 2nd line
-                       move_right(5);
-                       move_right(5);
-                       move_right(4);
-                       for(i=0; i<=test; i++)
-                       {
-                           down_line();
-                       }
-                       send_characters('-');
-
-                       send = meas*-10000000;
-                       send_number(send);
-                       send_characters(',');
-
-                   }
-                   else
-                   {
-                       cursor_pos(4, 2);   // set cursor to 2nd line
-                       for(i=0; i<=test; i++)
-                       {
-                           down_line();
-                       }
-                       move_right(5);
-                       move_right(5);
-                       move_right(4);
-                       send_characters(' ');
-
-                       send = meas*10000000;
-                       send_number(send);
-                       send_characters(',');
-
-                   }
-               }
-
-               for(loop = 0; loop < 10000; loop++);
-
-               // second conversion
-               for(j = 0; j<2; j++)
-               {
-                   prep_ADS1220(0x03);
-                   for(loop = 0; loop < 10000; loop++);
-                   for(loop = 0; loop < 10000; loop++);
-
-                   meas = start_ADS1220(0x03);
-
-                   meas = meas * 0.9967506 + 0.0358632; // 0x03 scaling
-                   //meas = meas * 1.0038643 - 0.0163124;    // 0x01 scaling
-
-                   if(meas < 0)
-                   {
-                       cursor_pos(4, 2);   // set cursor to 2nd line
-
-                       for(i=0; i<=test; i++)
-                       {
-                           down_line();
-                       }
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(3);
-                       send_characters('-');
-
-                       send = meas*-10000000;
-                       send_number(send);
-                       send_characters(',');
-
-                   }
-                   else
-                   {
-                       cursor_pos(4, 2);   // set cursor to 2nd line
-
-                       for(i=0; i<=test; i++)
-                       {
-                           down_line();
-                       }
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(5);
-                       move_right(3);
-                       send_characters(' ');
-
-
-                       send = meas*10000000;
-                       send_number(send);
-                       send_characters(',');
-
-                   }
-                }
-
-
 
                 for(j = 0; j<2; j++)
                 {
-                    prep_ADS1220(0x00);
+                    prep_ADS1220(0x02);
                     for(loop = 0; loop < 10000; loop++);
                     for(loop = 0; loop < 10000; loop++);
-                    meas = start_ADS1220(0x00);
+                    meas = start_ADS1220(0x02);
 
-                    //meas = meas * 1.0044770 + 0.0357153; // 0x02 scaling
-                    meas = meas * 1.0017629 + 0.0382527;    // 0x00 scaling
+                    meas = meas * 1.0044770 + 0.0357153;
+
 
                     if(meas < 0)
                     {
                         cursor_pos(4, 2);   // set cursor to 2nd line
                         move_right(5);
                         move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(2);
+                        move_right(4);
                         for(i=0; i<=test; i++)
                         {
                             down_line();
@@ -480,13 +377,7 @@ void main(void)
                         }
                         move_right(5);
                         move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(2);
+                        move_right(4);
                         send_characters(' ');
 
                         send = meas*10000000;
@@ -501,14 +392,13 @@ void main(void)
                 // second conversion
                 for(j = 0; j<2; j++)
                 {
-                    prep_ADS1220(0x01);
+                    prep_ADS1220(0x03);
                     for(loop = 0; loop < 10000; loop++);
                     for(loop = 0; loop < 10000; loop++);
 
-                    meas = start_ADS1220(0x01);
+                    meas = start_ADS1220(0x03);
 
-                    //meas = meas * 0.9967506 + 0.0358632; // 0x03 scaling
-                    meas = meas * 1.0038643 - 0.0163124;    // 0x01 scaling
+                    meas = meas * 0.9967506 + 0.0358632; // AIO 2
 
                     if(meas < 0)
                     {
@@ -523,13 +413,7 @@ void main(void)
                         move_right(5);
                         move_right(5);
                         move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(1);
+                        move_right(3);
                         send_characters('-');
 
                         send = meas*-10000000;
@@ -550,14 +434,7 @@ void main(void)
                         move_right(5);
                         move_right(5);
                         move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(5);
-                        move_right(1);
-
+                        move_right(3);
                         send_characters(' ');
 
 
@@ -573,7 +450,7 @@ void main(void)
                 test++;
                 start_flag = 0;
 
-                if (test > 20)
+                if (test > 40)
                 {
                     finish = 1;
                     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIE;
@@ -823,9 +700,9 @@ void TA0_0_IRQHandler(void)
     volatile uint16_t value;
     uint32_t loop;
 
-    if (count == 200)
+    if (count == 75)
     {
-        inter = (voltage[test]*5 * 0.99525) + 0.00617; // out 3
+        inter = (voltage[test]*PS_OUT[main_loop] * 0.99525) + 0.00617; // out 3
         value = ((inter + 10) * (65535 / 20));
         if (value > 65535)
         {
@@ -833,7 +710,7 @@ void TA0_0_IRQHandler(void)
         }
         output_MAX5134(value, AO_DAC_3);
     }
-    else if  (count == 250)
+    else if  (count == 125)
     {
         convert_flag = 1;
         count = 0;
